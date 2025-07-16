@@ -1,8 +1,9 @@
 import os
 import sys
 from dotenv import load_dotenv
-from github import Github
 import praw
+import openai
+from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,9 +13,7 @@ def get_reddit_client():
     return praw.Reddit(
         client_id=os.getenv("REDDIT_CLIENT_ID"),
         client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-        user_agent=os.getenv("REDDIT_USER_AGENT"),
-        github_token = os.getenv("TOKEN"),
-        github_repo = os.getenv("REPO")
+        user_agent=os.getenv("REDDIT_USER_AGENT")
     )
 
 # Fetch posts and comments for a given Reddit user
@@ -60,40 +59,23 @@ Analyze their content and write a detailed User Persona including:
 POSTS:
 """
     for post in posts:
-        prompt += f"\n[Post on r/{post['subreddit']}] {post['title']} - {post['selftext']} ({post['url']})"
+        text = f"{post['title']} - {post['selftext']}".strip()
+        prompt += f"- ({post['subreddit']}): {text}\n"
 
-    prompt += "\n\nCOMMENTS:\n"
+    prompt += "\nCOMMENTS:\n"
     for comment in comments:
-        prompt += f"\n[Comment on r/{comment['subreddit']}] {comment['body']} ({comment['permalink']})"
+        prompt += f"- ({comment['subreddit']}): {comment['body']}\n"
 
-    prompt += "\n\nNow write the USER PERSONA:"
+    prompt += "\n\nBased on the above, write a short personality profile."
     return prompt
-
-# Create GitHub issue
-def create_github_issue(username, persona):
-    github_token = os.getenv("TOKEN")
-    github_repo = os.getenv("REPO")
-    if not github_token or not github_repo:
-        print("GitHub token or repo not set in environment variables.")
-        return
-    g = Github(github_token)
-    repo = g.get_repo(github_repo)
-    title = f"Persona for Reddit user u/{username}"
-    body = persona
-    issue = repo.create_issue(title=title, body=body)
-    print(f"✅ GitHub issue created: {issue.html_url}")
-
-# Ensure persona_output directory exists
-def ensure_output_dir():
-    os.makedirs("persona_output", exist_ok=True)
 
 # Save persona to file
 def save_output(username, persona):
-    ensure_output_dir()
+    os.makedirs("persona_output", exist_ok=True)
     filename = f"persona_output/persona_{username}.txt"
     with open(filename, "w", encoding="utf-8") as f:
         f.write(persona)
-    print(f"Persona saved to {filename}")
+    print(f"✅ Persona saved to {filename}")
 
 # Extract username from input
 def extract_username(input_str):
@@ -105,18 +87,47 @@ def extract_username(input_str):
     else:
         return input_str
 
+# Generate persona using Groq API
+
+def generate_persona_groq(prompt):
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise ValueError("❌ GROQ_API_KEY not found in environment variables!")
+
+    client = OpenAI(
+        api_key=groq_api_key,
+        base_url="https://api.groq.com/openai/v1"
+    )
+
+    response = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=[
+            {"role": "system", "content": "You are an expert personality analyst. Generate a detailed Reddit user persona."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.7,
+        max_tokens=2048,
+    )
+
+    return response.choices[0].message.content
+
+# Main execution
 def main():
     if len(sys.argv) > 1:
         input_str = sys.argv[1]
     else:
         print("Usage: python reddit_persona_builder.py <reddit_username_or_url>")
         sys.exit(1)
+
     username = extract_username(input_str)
-    print(f"\n🔍 Extracting data for u/{username}...\n")
+    print(f"\n🔍 Fetching data for u/{username}...\n")
     posts, comments = fetch_user_data(username)
     persona_prompt = build_persona_prompt(username, posts, comments)
-    save_output(username, persona_prompt)
-    create_github_issue(username, persona_prompt)
+
+    print("\n🤖 Generating user persona...\n")
+    persona_text = generate_persona_groq(persona_prompt)
+
+    save_output(username, persona_text)
 
 if __name__ == "__main__":
     main()
