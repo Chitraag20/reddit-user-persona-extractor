@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run extractor
-        run: python reddit_persona_builder.py <kojied>
+        run: python reddit_persona_builder.py
 
         
       - name: Create GitHub issue with persona output
