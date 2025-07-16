@@ -1,4 +1,8 @@
 name: Run Reddit Persona Extractor
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 on:
   workflow_dispatch: # Allows manual triggering
