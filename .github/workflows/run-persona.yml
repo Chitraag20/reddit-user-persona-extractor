@@ -1,0 +1,36 @@
+name: Run Reddit Persona Extractor
+
+on:
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  run-persona:
+    runs-on: ubuntu-latest
+    env:
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run persona extractor
+        id: persona
+        run: |
+          python reddit_persona_builder.py > persona_output.txt
+
+      - name: Create GitHub issue with persona output
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Reddit Persona Extracted - ${{ github.run_id }}"
+          content-filepath: persona_output.txt
+          labels: persona, automated
