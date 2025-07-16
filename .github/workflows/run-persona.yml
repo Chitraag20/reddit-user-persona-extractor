@@ -14,7 +14,8 @@ jobs:
       REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
-      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TOKEN : ${{ secrets.TOKEN }}
+      REPO : ${{ secrets.REPO}}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
