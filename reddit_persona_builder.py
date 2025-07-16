@@ -70,8 +70,8 @@ POSTS:
 
 # Create GitHub issue
 def create_github_issue(username, persona):
-    github_token = os.getenv("GITHUB_TOKEN")
-    github_repo = os.getenv("GITHUB_REPO")
+    github_token = os.getenv("TOKEN")
+    github_repo = os.getenv("REPO")
     if not github_token or not github_repo:
         print("GitHub token or repo not set in environment variables.")
         return
