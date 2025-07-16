@@ -107,7 +107,12 @@ def save_output(username, content):
 
 
 def main():
-    input_str = input("Enter Reddit username or profile URL: ")
+   import sys
+   if len(sys.argv) > 1:
+     input_str = sys.argv[1]
+   else:
+    print("Usage: python reddit_persona_builder.py <reddit_username_or_url>")
+    sys.exit(1)
     username = extract_username(input_str)
     print(f"\n🔍 Extracting data for u/{username}...\n")
     comments, posts = fetch_user_data(username)
